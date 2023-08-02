@@ -1,49 +1,43 @@
+import { useState, useEffect } from "react";
 import "./styles.css";
-import { useEffect, useState } from "react";
 
 export default function App() {
-  const [wordCloudData, setWordCloud] = useState([]);
+  const [wordCloud, setWordCloud] = useState([]);
 
   useEffect(() => {
-    const fetchWordCloud = async () => {
-      const result = await fetch(
+    const fetchData = async () => {
+      const response = await fetch(
         "https://baconipsum.com/api/?type=all-meat&paras=10&start-with-lorem=1"
       );
-      const data = await result.json();
+      let result = await response.json();
+      //process data to remove punctuations
+      result = result
+        .join("")
+        .toLowerCase()
+        .replaceAll(/[^a-z-\s]/g, " ")
+        .split(" ");
+
+      // loop through array of words to find count of each word
       const wordCloudMap = new Map();
-      let allWords = [];
-      for (let sentence of data) {
-        const wordsArray = sentence
-          .toLowerCase()
-          .replaceAll(/[^a-z]/g, " ")
-          .split(" ");
-        allWords.push(...wordsArray.filter((word) => word !== ""));
-      }
-      for (let word of allWords) {
-        if (wordCloudMap.get(word)) {
-          wordCloudMap.set(word, wordCloudMap.get(word) + 1);
+      for (let item of result) {
+        if (item === "") continue;
+        if (wordCloudMap.has(item)) {
+          wordCloudMap.set(item, wordCloudMap.get(item) + 1);
         } else {
-          wordCloudMap.set(word, 1);
+          wordCloudMap.set(item, 1);
         }
       }
 
-      const rankedWords = [];
-      for (let [key, value] of wordCloudMap.entries()) {
-        rankedWords.push([key, value]);
-      }
-      // rankedWords.sort((a, b) => b[1] - a[1]);
-      console.log(rankedWords);
-      setWordCloud(rankedWords);
+      // turn map into a 2d array of item, and item count
+      setWordCloud([...wordCloudMap.entries()]);
     };
-    fetchWordCloud();
+    fetchData();
   }, []);
 
   return (
     <div className="App">
-      {wordCloudData.map((word) => (
-        <span style={{ fontSize: word[1] <= 12 ? 12 * word[1] : 12 * word[1] }}>
-          {word[0]}{" "}
-        </span>
+      {wordCloud.map((word) => (
+        <span style={{ fontSize: word[1] * 12 }}>{word[0]} </span>
       ))}
     </div>
   );
